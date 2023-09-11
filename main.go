@@ -1,25 +1,28 @@
 package main
 
-import(
+import (
 	"flag"
 	"fmt"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/rhodinemma/google-translate-project/cli"
 )
+
+var wg sync.WaitGroup
 
 var sourceLang string
 var targetLang string
 var sourceText string
 
-
-func init(){
+func init() {
 	flag.StringVar(&sourceLang, "s", "en", "Source language[en]")
 	flag.StringVar(&targetLang, "t", "fr", "Target language[fr]")
 	flag.StringVar(&sourceText, "st", "", "Text to translate")
 }
 
-func main(){
+func main() {
 	flag.Parse()
 
 	if flag.NFlag() == 0 {
@@ -28,11 +31,21 @@ func main(){
 		os.Exit(1)
 	}
 
+	strChan := make(chan string)
+
+	wg.Add(1)
+
 	reqBody := &cli.RequestBody{
-		SourceLang: sousourceLang,
-		TargetLang: targtargetLang,
-		SourceText: soursourceText,
+		SourceLang: sourceLang,
+		TargetLang: targetLang,
+		SourceText: sourceText,
 	}
 
-	cli.RequestTranslate(reqBody)
+	go cli.RequestTranslate(reqBody, strChan, &wg)
+
+	processedStr := strings.ReplaceAll(<-strChan, "+", "")
+
+	fmt.Printf("%s\n", processedStr)
+	close(strChan)
+	wg.Wait()
 }
