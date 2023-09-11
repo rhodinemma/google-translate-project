@@ -6,7 +6,11 @@ import(
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/HotPotatoC/go-translate/cli"
 )
+
+var wg sync.WaitGroup
 
 var sourceLang string
 var targetLang string
@@ -28,11 +32,21 @@ func main(){
 		os.Exit(1)
 	}
 
+	strChan := make(chan string)
+
+	wg.Add(1)
+
 	reqBody := &cli.RequestBody{
-		SourceLang: sousourceLang,
-		TargetLang: targtargetLang,
-		SourceText: soursourceText,
+		SourceLang: sourceLang,
+		TargetLang: targetLang,
+		SourceText: sourceText,
 	}
 
-	cli.RequestTranslate(reqBody)
+	go cli.RequestTranslate(reqBody, strChan, &wg)
+
+	processedStr := strings.ReplaceAll(<-strChan, "+", "")
+
+	fmt.Println("%s\n", processedStr)
+	close(strChan)
+	wg.Wait()
 }
